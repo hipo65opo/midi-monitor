@@ -1,0 +1,104 @@
+import { VerticalBox, HorizontalBox, Button, Slider, ScrollView } from "std-widgets.slint";
+
+export component MainWindow inherits Window {
+    preferred-width: 800px;
+    preferred-height: 600px;
+    min-width: 600px;
+    min-height: 400px;
+    title: "MIDI Monitor";
+
+    callback refresh-devices();
+    callback device-selected(string);
+    callback slider-changed(float);
+    in property <[string]> midi-devices: [];
+    in property <[string]> messages: [];
+    in-out property <float> slider-value: 0;
+
+    Rectangle {
+        // タイトル
+        Text {
+            y: 10px;
+            text: "MIDI Monitor";
+            font-size: 24px;
+            horizontal-alignment: center;
+        }
+
+        // 上部コントロール
+        HorizontalLayout {
+            y: 50px;
+            padding-left: 20px;
+            padding-right: 20px;
+            spacing: 20px;
+            height: 100px;
+
+            // 左側：スライダー部分
+            VerticalLayout {
+                width: 200px;
+                alignment: center;
+                spacing: 5px;
+
+                Text {
+                    text: "Value: " + Math.round(root.slider-value);
+                    horizontal-alignment: center;
+                }
+
+                Slider {
+                    width: parent.width;
+                    height: 40px;
+                    orientation: horizontal;
+                    minimum: 0;
+                    maximum: 127;
+                    value <=> root.slider-value;
+                    changed => {
+                        root.slider-changed(self.value);
+                    }
+                }
+
+                Text {
+                    text: "CC#81";
+                    horizontal-alignment: center;
+                }
+            }
+
+            // 右側：デバイス選択
+            VerticalLayout {
+                spacing: 10px;
+
+                // MIDI Devices と Refresh ボタン
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 10px;
+
+                    Text { 
+                        text: "MIDI Devices:";
+                        vertical-alignment: center;
+                        font-size: 14px;
+                    }
+
+                    Button {
+                        text: "Refresh";
+                        width: 80px;
+                        height: 32px;
+                        clicked => { 
+                            root.refresh-devices();
+                        }
+                    }
+                }
+
+                // デバイス選択ボタン
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 10px;
+                    for device in root.midi-devices: Button {
+                        text: device;
+                        width: 200px;
+                        height: 32px;
+                        clicked => { 
+                            root.device-selected(device);
+                        }
+                    }
+                }
+            }
+        }
+    }
+} 

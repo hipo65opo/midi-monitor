@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct MidiMessage {
     message_type: MessageType,
     channel: u8,
@@ -19,9 +20,9 @@ pub enum MessageType {
 }
 
 impl MidiMessage {
-    pub fn from_bytes(data: &[u8]) -> Self {
-        if data.is_empty() {
-            return Self::empty();
+    pub fn from_bytes(data: &[u8]) -> Option<Self> {
+        if data.len() < 3 {
+            return None;
         }
 
         let status = data[0];
@@ -38,28 +39,37 @@ impl MidiMessage {
         };
 
         let channel = status & 0x0F;
-        let data1 = data.get(1).copied().unwrap_or(0);
-        let data2 = data.get(2).copied().unwrap_or(0);
+        let data1 = data[1];
+        let data2 = data[2];
 
-        Self {
+        Some(Self {
             message_type,
             channel,
             data1,
             data2,
-        }
+        })
     }
 
-    fn empty() -> Self {
-        Self {
-            message_type: MessageType::Unknown,
-            channel: 0,
-            data1: 0,
-            data2: 0,
-        }
+    pub fn is_control_change(&self) -> bool {
+        matches!(self.message_type, MessageType::ControlChange)
+    }
+
+    pub fn get_controller_number(&self) -> u8 {
+        self.data1
+    }
+
+    pub fn get_value(&self) -> u8 {
+        self.data2
     }
 
     pub fn to_string(&self) -> String {
         match self.message_type {
+            MessageType::ControlChange => format!(
+                "Control Change - Channel: {} Controller: {} Value: {}",
+                self.channel + 1,
+                self.data1,
+                self.data2
+            ),
             MessageType::NoteOn => format!(
                 "Note On - Channel: {} Note: {} Velocity: {}",
                 self.channel + 1,
@@ -72,19 +82,8 @@ impl MidiMessage {
                 self.data1,
                 self.data2
             ),
-            MessageType::ControlChange => format!(
-                "Control Change - Channel: {} Controller: {} Value: {}",
-                self.channel + 1,
-                self.data1,
-                self.data2
-            ),
-            MessageType::ProgramChange => format!(
-                "Program Change - Channel: {} Program: {}",
-                self.channel + 1,
-                self.data1
-            ),
             _ => format!(
-                "Other Message - Type: {:?} Channel: {} Data: [{}, {}]",
+                "MIDI Message - Type: {:?} Channel: {} Data: [{}, {}]",
                 self.message_type,
                 self.channel + 1,
                 self.data1,
